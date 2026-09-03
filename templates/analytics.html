@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据分析 - 采购代理台账管理系统</title>
+<script src="/static/vendor/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #f0f2f5; --surface: #fff; --ink: #1e293b; --muted: #64748b;
+  --border: #e2e8f0; --accent: #3b82f6; --accent2: #8b5cf6;
+  --green: #10b981; --orange: #f59e0b; --red: #ef4444;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans CJK SC", sans-serif; background: var(--bg); color: var(--ink); }
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 20px; }
+.header-right { display: flex; gap: 12px; align-items: center; }
+.back-btn { padding: 6px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.back-btn:hover { opacity: 0.9; }
+.tab-bar { display: flex; gap: 4px; background: var(--surface); padding: 0 24px; border-bottom: 1px solid var(--border); }
+.tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-btn:hover { color: var(--accent); }
+.container { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border-radius: 8px; padding: 20px; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.stat-card .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.stat-card .value { font-size: 28px; font-weight: 700; color: var(--ink); }
+.stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-card.blue .value { color: var(--accent); }
+.stat-card.green .value { color: var(--green); }
+.stat-card.orange .value { color: var(--orange); }
+.stat-card.red .value { color: var(--red); }
+.stat-card.purple .value { color: var(--accent2); }
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+.chart-grid.full { grid-template-columns: 1fr; }
+.chart-card { background: var(--surface); border-radius: 8px; padding: 16px; border: 1px solid var(--border); }
+.chart-card h3 { font-size: 15px; margin-bottom: 8px; color: var(--ink); }
+.chart-container { width: 100%; height: 320px; }
+.chart-container.tall { height: 400px; }
+.loading { text-align: center; padding: 40px; color: var(--muted); }
+@media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } .stat-cards { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>数据分析视图</h1>
+  <div class="header-right">
+    <a href="/" class="back-btn">&larr; 返回台账管理</a>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-panel="overview">总览</button>
+  <button class="tab-btn" data-panel="projects">项目分析</button>
+  <button class="tab-btn" data-panel="financial">财务分析</button>
+  <button class="tab-btn" data-panel="personnel">人员分析</button>
+</div>
+
+<div class="container">
+  <!-- 总览面板 -->
+  <div class="panel active" id="panel-overview">
+    <div class="stat-cards" id="overview-cards"></div>
+    <div class="chart-grid">
+      <div class="chart-card"><h3>各台账记录数</h3><div class="chart-container" id="chart-table-counts"></div></div>
+      <div class="chart-card"><h3>项目按采购环节分布</h3><div class="chart-container" id="chart-stage-dist"></div></div>
+      <div class="chart-card"><h3>项目按采购方式分布</h3><div class="chart-container" id="chart-method-dist"></div></div>
+      <div class="chart-card"><h3>项目按合同期分布</h3><div class="chart-container" id="chart-period-dist"></div></div>
+      <div class="chart-card"><h3>超期统计</h3><div class="chart-container" id="chart-overdue"></div></div>
+      <div class="chart-card"><h3>项目问题类型分布</h3><div class="chart-container" id="chart-issues"></div></div>
+    </div>
+  </div>
+
+  <!-- 项目分析面板 -->
+  <div class="panel" id="panel-projects">
+    <div class="stat-cards" id="project-cards"></div>
+    <div class="chart-grid">
+      <div class="chart-card"><h3>项目类别分布</h3><div class="chart-container" id="chart-category"></div></div>
+      <div class="chart-card"><h3>委托单位 Top 10</h3><div class="chart-container" id="chart-client-top"></div></div>
+      <div class="chart-card"><h3>采购经理项目数分布</h3><div class="chart-container" id="chart-manager"></div></div>
+      <div class="chart-card"><h3>归档状态分布</h3><div class="chart-container" id="chart-archive"></div></div>
+      <div class="chart-card"><h3>稽核问题分布</h3><div class="chart-container" id="chart-audit"></div></div>
+    </div>
+    <div class="chart-grid full">
+      <div class="chart-card"><h3>各合同期预算/中标/代理费金额对比（万元）</h3><div class="chart-container tall" id="chart-period-amount"></div></div>
+    </div>
+  </div>
+
+  <!-- 财务分析面板 -->
+  <div class="panel" id="panel-financial">
+    <div class="stat-cards" id="financial-cards"></div>
+    <div class="chart-grid">
+      <div class="chart-card"><h3>代理费应收/实收对比（按合同期）</h3><div class="chart-container" id="chart-agency-period"></div></div>
+      <div class="chart-card"><h3>评审费按发放方式分布</h3><div class="chart-container" id="chart-expert-method"></div></div>
+    </div>
+  </div>
+
+  <!-- 人员分析面板 -->
+  <div class="panel" id="panel-personnel">
+    <div class="stat-cards" id="personnel-cards"></div>
+    <div class="chart-grid">
+      <div class="chart-card"><h3>人员按代理机构分布</h3><div class="chart-container" id="chart-p-agency"></div></div>
+      <div class="chart-card"><h3>人员按资质分布</h3><div class="chart-container" id="chart-p-qual"></div></div>
+      <div class="chart-card"><h3>认证过期统计</h3><div class="chart-container" id="chart-p-cert"></div></div>
+      <div class="chart-card"><h3>人员状态分布</h3><div class="chart-container" id="chart-p-status"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+const token = localStorage.getItem('authToken');
+
+if (!token) { window.location.href = '/'; }
+
+async function fetchAPI(path) {
+  const resp = await fetch(API_BASE + path, { headers: { 'Authorization': 'Bearer ' + token } });
+  if (resp.status === 401) { window.location.href = '/'; return null; }
+  if (resp.status === 403) { window.location.href = '/?msg=' + encodeURIComponent('数据分析仅管理员可查看'); return null; }
+  return resp.json();
+}
+
+function fmtMoney(val) {
+  if (!val || val === 0) return '0';
+  return Number(val).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+function fmtWan(val) {
+  return (val / 10000).toFixed(2);
+}
+
+function renderStatCards(containerId, cards) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = cards.map(c => `<div class="stat-card ${c.color || ''}"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.sub ? `<div class="sub">${c.sub}</div>` : ''}</div>`).join('');
+}
+
+const charts = {};
+function getChart(id) {
+  if (!charts[id]) charts[id] = echarts.init(document.getElementById(id));
+  return charts[id];
+}
+
+const PIE_COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+    // Resize charts on tab switch
+    setTimeout(() => { Object.values(charts).forEach(c => c.resize()); }, 100);
+  });
+});
+
+// ============ Overview ============
+async function loadOverview() {
+  const data = await fetchAPI('/analytics/overview');
+  if (!data || !data.success) return;
+
+  const ps = data.project_stats;
+  const tc = data.table_counts;
+  const tableNames = { projects:'项目台账', agency_fees:'代理费台账', personnel:'代理人员', expert_fees:'专家评审费', samples:'样品收发', eval_rooms:'电子评标室', expert_evaluation:'专家评议', bid_deposits:'投标保证金', performance_deposits:'履约保证金', project_issues:'项目问题' };
+
+  renderStatCards('overview-cards', [
+    { label: '项目总数', value: ps.total, color: 'blue' },
+    { label: '项目预算总额', value: fmtWan(ps.total_budget) + ' 万', color: 'purple' },
+    { label: '中标总额', value: fmtWan(ps.total_winning) + ' 万', color: 'green' },
+    { label: '代理费总额', value: fmtWan(ps.total_agency_fee) + ' 万', color: 'orange' },
+    { label: '备案超期项目', value: data.overdue_stats.record_overdue, color: data.overdue_stats.record_overdue > 0 ? 'red' : 'green' },
+    { label: '归档超期项目', value: data.overdue_stats.archive_overdue, color: data.overdue_stats.archive_overdue > 0 ? 'red' : 'green' },
+    { label: '项目问题数', value: data.issue_stats.total, sub: `已整改 ${data.issue_stats.rectified}`, color: data.issue_stats.total > 0 ? 'orange' : 'green' },
+  ]);
+
+  // Table counts bar chart
+  const tcData = Object.entries(tc).map(([k, v]) => ({ name: tableNames[k] || k, value: v })).filter(d => d.value > 0);
+  getChart('chart-table-counts').setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 100, right: 20, top: 20, bottom: 20 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: tcData.map(d => d.name), axisLabel: { fontSize: 12 } },
+    series: [{ type: 'bar', data: tcData.map(d => d.value), itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] } }],
+  });
+
+  getChart('chart-stage-dist').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0, type: 'scroll' },
+    series: [{ type: 'pie', radius: ['40%', '70%'], data: data.stage_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-method-dist').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0, type: 'scroll' },
+    series: [{ type: 'pie', radius: '60%', data: data.method_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-period-dist').setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 40, right: 20, top: 20, bottom: 30 },
+    xAxis: { type: 'category', data: data.period_distribution.map(d => d.name) },
+    yAxis: { type: 'value' },
+    series: [{ type: 'bar', data: data.period_distribution.map(d => d.value), itemStyle: { color: '#8b5cf6', borderRadius: [4, 4, 0, 0] } }],
+  });
+
+  const ov = data.overdue_stats;
+  getChart('chart-overdue').setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 80, right: 20, top: 20, bottom: 20 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: ['备案超期', '实施报告超期', '归档超期'] },
+    series: [{ type: 'bar', data: [ov.record_overdue, ov.impl_report_overdue, ov.archive_overdue], itemStyle: { color: function(p) { return ['#ef4444', '#f59e0b', '#dc2626'][p.dataIndex]; }, borderRadius: [0, 4, 4, 0] } }],
+  });
+
+  getChart('chart-issues').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0, type: 'scroll' },
+    series: [{ type: 'pie', radius: '60%', data: data.issue_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+}
+
+// ============ Projects ============
+async function loadProjects() {
+  const data = await fetchAPI('/analytics/projects');
+  if (!data || !data.success) return;
+
+  renderStatCards('project-cards', [
+    { label: '项目类别数', value: data.category_distribution.length, color: 'blue' },
+    { label: '委托单位数', value: data.client_top10.length, sub: 'Top 10', color: 'purple' },
+    { label: '采购经理数', value: data.manager_distribution.length, color: 'green' },
+    { label: '已归档项目', value: (data.archive_distribution.find(d => d.name === '是') || { value: 0 }).value, color: 'green' },
+    { label: '稽核有问题', value: (data.audit_distribution.find(d => d.name === '是') || { value: 0 }).value, color: 'red' },
+  ]);
+
+  getChart('chart-category').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: data.category_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-client-top').setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 120, right: 20, top: 20, bottom: 20 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: data.client_top10.map(d => d.name).reverse(), axisLabel: { fontSize: 11 } },
+    series: [{ type: 'bar', data: data.client_top10.map(d => d.value).reverse(), itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] } }],
+  });
+
+  getChart('chart-manager').setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 80, right: 20, top: 20, bottom: 60 },
+    xAxis: { type: 'category', data: data.manager_distribution.map(d => d.name), axisLabel: { rotate: 45, fontSize: 11 } },
+    yAxis: { type: 'value' },
+    series: [{ type: 'bar', data: data.manager_distribution.map(d => d.value), itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] } }],
+  });
+
+  getChart('chart-archive').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: data.archive_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-audit').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: data.audit_distribution, color: ['#10b981', '#ef4444', '#94a3b8'], label: { formatter: '{b}: {c}' } }],
+  });
+
+  const pa = data.period_amount;
+  getChart('chart-period-amount').setOption({
+    tooltip: { trigger: 'axis' }, legend: { top: 0 },
+    grid: { left: 60, right: 20, top: 40, bottom: 30 },
+    xAxis: { type: 'category', data: pa.map(d => d.period) },
+    yAxis: { type: 'value', name: '万元' },
+    series: [
+      { name: '预算金额', type: 'bar', data: pa.map(d => fmtWan(d.budget)), itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] } },
+      { name: '中标金额', type: 'bar', data: pa.map(d => fmtWan(d.winning)), itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] } },
+      { name: '代理费', type: 'bar', data: pa.map(d => fmtWan(d.agency_fee)), itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] } },
+    ],
+  });
+}
+
+// ============ Financial ============
+async function loadFinancial() {
+  const data = await fetchAPI('/analytics/financial');
+  if (!data || !data.success) return;
+
+  const af = data.agency_fee_stats;
+  const bd = data.bid_deposit_stats;
+  const pd = data.perf_deposit_stats;
+  const ef = data.expert_fee_stats;
+
+  renderStatCards('financial-cards', [
+    { label: '代理费应收总额', value: fmtWan(af.total_receivable) + ' 万', color: 'blue' },
+    { label: '代理费实收总额', value: fmtWan(af.total_received) + ' 万', sub: `未收 ${fmtWan(af.total_outstanding)} 万`, color: af.total_outstanding > 0 ? 'orange' : 'green' },
+    { label: '投标保证金应收', value: fmtWan(bd.total_receivable) + ' 万', color: 'purple' },
+    { label: '投标保证金实退', value: fmtWan(bd.total_refunded) + ' 万', color: 'green' },
+    { label: '履约保证金总额', value: fmtWan(pd.total_amount) + ' 万', sub: `${pd.total_records} 笔`, color: 'orange' },
+    { label: '评审费总额', value: fmtWan(ef.total_fee) + ' 万', sub: `${ef.total_records} 笔`, color: 'red' },
+  ]);
+
+  const abp = data.agency_by_period;
+  getChart('chart-agency-period').setOption({
+    tooltip: { trigger: 'axis' }, legend: { top: 0 },
+    grid: { left: 60, right: 20, top: 40, bottom: 30 },
+    xAxis: { type: 'category', data: abp.map(d => d.period) },
+    yAxis: { type: 'value', name: '万元' },
+    series: [
+      { name: '应收', type: 'bar', data: abp.map(d => fmtWan(d.receivable)), itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] } },
+      { name: '实收', type: 'bar', data: abp.map(d => fmtWan(d.received)), itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] } },
+    ],
+  });
+
+  const ebm = data.expert_by_method;
+  getChart('chart-expert-method').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: ebm.map(d => ({ name: d.name, value: d.count })), color: PIE_COLORS, label: { formatter: '{b}: {c}笔' } }],
+  });
+}
+
+// ============ Personnel ============
+async function loadPersonnel() {
+  const data = await fetchAPI('/analytics/personnel');
+  if (!data || !data.success) return;
+
+  const ps = data.personnel_stats;
+  renderStatCards('personnel-cards', [
+    { label: '人员总数', value: ps.total, color: 'blue' },
+    { label: '正常状态', value: ps.normal, color: 'green' },
+    { label: '冻结', value: ps.frozen, color: ps.frozen > 0 ? 'orange' : 'green' },
+    { label: '锁定', value: ps.locked, color: ps.locked > 0 ? 'red' : 'green' },
+    { label: '已离职', value: ps.resigned, color: ps.resigned > 0 ? 'red' : 'green' },
+  ]);
+
+  getChart('chart-p-agency').setOption({
+    tooltip: { trigger: 'axis' }, grid: { left: 120, right: 20, top: 20, bottom: 20 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: data.agency_distribution.map(d => d.name).reverse(), axisLabel: { fontSize: 11 } },
+    series: [{ type: 'bar', data: data.agency_distribution.map(d => d.value).reverse(), itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] } }],
+  });
+
+  getChart('chart-p-qual').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: data.qualification_distribution, color: PIE_COLORS, label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-p-cert').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: '60%', data: data.cert_distribution, color: ['#10b981', '#ef4444', '#94a3b8'], label: { formatter: '{b}: {c}' } }],
+  });
+
+  getChart('chart-p-status').setOption({
+    tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: ['40%', '70%'], data: [
+      { name: '正常', value: ps.normal }, { name: '冻结', value: ps.frozen }, { name: '锁定', value: ps.locked }, { name: '已离职', value: ps.resigned }
+    ], color: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8'], label: { formatter: '{b}: {c}' } }],
+  });
+}
+
+// Load all
+Promise.all([loadOverview(), loadProjects(), loadFinancial(), loadPersonnel()]).then(() => {
+  console.log('All analytics loaded');
+});
+
+window.addEventListener('resize', () => { Object.values(charts).forEach(c => c.resize()); });
+</script>
+</body>
+</html>

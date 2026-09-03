@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+*.db
+*.sqlite
+data
+.git
+.gitignore
+.dockerignore
+*.log
+.idea
+.vscode

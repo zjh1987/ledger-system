@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>采购代理台账管理系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- ========== 登录页面 ========== -->
+    <div class="login-page" id="loginPage">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">台账</div>
+                <h1>采购代理台账管理系统</h1>
+                <p>请登录以继续</p>
+            </div>
+            <form class="login-form" id="loginForm">
+                <div class="login-form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" class="login-input" placeholder="请输入用户名" autocomplete="username" required>
+                </div>
+                <div class="login-form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" class="login-input" placeholder="请输入密码" autocomplete="current-password" required>
+                </div>
+                <div class="login-error" id="loginError" style="display:none;"></div>
+                <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+            </form>
+            <div class="login-footer">
+                <p>采购代理台账管理系统 v2.0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 主界面（登录后显示） ========== -->
+    <div id="mainApp" style="display:none;">
+
+    <!-- 顶部导航栏 -->
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <button class="sidebar-toggle" id="sidebarToggle" title="收起/展开侧边栏">
+                <span class="hamburger-icon"></span>
+            </button>
+            <h1 class="system-title">采购代理台账管理系统</h1>
+        </div>
+        <div class="top-bar-right">
+            <button class="btn btn-import" id="importBtn">
+                <span class="btn-icon">导入</span>
+            </button>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none;">
+            <button class="btn btn-export" id="exportBtn">
+                <span class="btn-icon">导出Excel</span>
+            </button>
+            <button class="btn btn-import" id="importAllBtn" style="display:none;" title="一键导入全部10张表">
+                <span class="btn-icon">导入全部</span>
+            </button>
+            <button class="btn btn-export" id="downloadTemplateBtn" style="display:none;" title="下载导入模板">
+                <span class="btn-icon">导入模板</span>
+            </button>
+            <button class="btn btn-export" id="exportAllBtn" style="display:none;" title="一键导出全部10张表">
+                <span class="btn-icon">导出全部</span>
+            </button>
+            <button class="btn btn-danger" id="clearAllBtn" style="display:none;" title="清空全部台账数据（需先导出）">
+                <span class="btn-icon">清空台账</span>
+            </button>
+            <input type="file" id="importAllFileInput" accept=".xlsx,.xls" style="display:none;">
+            <!-- 用户菜单 -->
+            <div class="user-menu" id="userMenu">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span class="user-name" id="userName">用户</span>
+                <div class="user-dropdown" id="userDropdown" style="display:none;">
+                    <div class="user-dropdown-item" id="menuUserInfo">当前角色：—</div>
+                    <div class="user-dropdown-divider"></div>
+                    <div class="user-dropdown-item" id="menuUserManage" style="display:none;">用户管理</div>
+                    <div class="user-dropdown-item" id="menuDropdownManage" style="display:none;">下拉选项管理</div>
+                    <div class="user-dropdown-item" id="menuColumnManage" style="display:none;">表头列管理</div>
+                    <div class="user-dropdown-item" id="menuChangePassword">修改密码</div>
+                    <div class="user-dropdown-divider"></div>
+                    <div class="user-dropdown-item danger" id="menuLogout">退出登录</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 左侧侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="tab-list" id="tabList">
+                    <li class="tab-item active" data-table="projects" data-name="项目台账">
+                        <span class="tab-index">1</span>
+                        <span class="tab-label">项目台账</span>
+                    </li>
+                    <li class="tab-item" data-table="agency_fees" data-name="代理费台账">
+                        <span class="tab-index">2</span>
+                        <span class="tab-label">代理费台账</span>
+                    </li>
+                    <li class="tab-item" data-table="personnel" data-name="代理人员及账号">
+                        <span class="tab-index">3</span>
+                        <span class="tab-label">代理人员及账号</span>
+                    </li>
+                    <li class="tab-item" data-table="expert_fees" data-name="专家评审费发放台账">
+                        <span class="tab-index">4</span>
+                        <span class="tab-label">专家评审费发放台账</span>
+                    </li>
+                    <li class="tab-item" data-table="samples" data-name="样品收发台账">
+                        <span class="tab-index">5</span>
+                        <span class="tab-label">样品收发台账</span>
+                    </li>
+                    <li class="tab-item" data-table="eval_rooms" data-name="电子评标室使用情况">
+                        <span class="tab-index">6</span>
+                        <span class="tab-label">电子评标室使用情况</span>
+                    </li>
+                    <li class="tab-item" data-table="expert_evaluation" data-name="评审专家履职评议">
+                        <span class="tab-index">7</span>
+                        <span class="tab-label">评审专家履职评议</span>
+                    </li>
+                    <li class="tab-item" data-table="bid_deposits" data-name="投标保证金台账">
+                        <span class="tab-index">8</span>
+                        <span class="tab-label">投标保证金台账</span>
+                    </li>
+                    <li class="tab-item" data-table="performance_deposits" data-name="履约保证金台账">
+                        <span class="tab-index">9</span>
+                        <span class="tab-label">履约保证金台账</span>
+                    </li>
+                    <li class="tab-item" data-table="project_issues" data-name="项目问题台账">
+                        <span class="tab-index">10</span>
+                        <span class="tab-label">项目问题台账</span>
+                    </li>
+                </ul>
+                <div class="sidebar-divider" style="margin: 8px 12px; border-top: 1px solid var(--color-border);"></div>
+                <ul style="list-style: none; padding: 0 0 0 12px;">
+                    <li class="tab-item" style="cursor: pointer;" onclick="window.location.href='/analytics'" id="analyticsLink">
+                        <span class="tab-label" style="color: var(--color-primary);">📊 数据分析</span>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator" id="apiStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">API 连接中...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="content" id="content">
+            <!-- 工具栏 -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <h2 class="current-table-title" id="currentTableTitle">项目台账</h2>
+                    <span class="record-count" id="recordCount">共 0 条记录</span>
+                </div>
+                <div class="toolbar-right">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="搜索..." class="search-input">
+                        <button class="search-clear" id="searchClear" title="清除搜索" style="display:none;">×</button>
+                    </div>
+                    <button class="btn btn-validate" id="validateBtn" title="校验当前表所有数据">
+                        <span>校验</span>
+                    </button>
+                    <button class="btn btn-refresh" id="refreshBtn" title="刷新数据">
+                        <span>刷新</span>
+                    </button>
+                    <button class="btn btn-add" id="addBtn" title="新增一行">
+                        <span>新增</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 权限提示 -->
+            <div class="permission-hint" id="permissionHint" style="display:none;">
+                <span class="hint-icon">!</span>
+                <span>您当前为普通用户，只能删除自己创建的记录</span>
+            </div>
+
+            <!-- 数据表格区 -->
+            <div class="table-wrapper">
+                <div class="table-scroll">
+                    <table class="data-table" id="dataTable">
+                        <thead id="tableHead">
+                            <tr>
+                                <th class="col-actions">操作</th>
+                                <th class="col-idx">#</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr class="empty-row">
+                                <td colspan="3" class="empty-cell">请选择左侧台账查看数据...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination" id="pagination">
+                <div class="page-info">
+                    <span id="pageInfo">第 0 / 0 页</span>
+                    <select id="pageSizeSelect" class="page-size-select" title="每页条数">
+                        <option value="10">10 条/页</option>
+                        <option value="20" selected>20 条/页</option>
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                </div>
+                <div class="page-controls">
+                    <button class="page-btn" id="firstPageBtn" title="首页">«</button>
+                    <button class="page-btn" id="prevPageBtn" title="上一页">‹</button>
+                    <span class="page-numbers" id="pageNumbers"></span>
+                    <button class="page-btn" id="nextPageBtn" title="下一页">›</button>
+                    <button class="page-btn" id="lastPageBtn" title="末页">»</button>
+                </div>
+            </div>
+
+            <!-- 校验结果面板 -->
+            <div class="validation-panel" id="validationPanel">
+                <div class="validation-header">
+                    <h3 class="validation-title">
+                        <span class="validation-icon">校验结果</span>
+                    </h3>
+                    <div class="validation-summary" id="validationSummary">
+                        <span class="badge badge-error" id="errorCount">错误 0</span>
+                        <span class="badge badge-warning" id="warningCount">警告 0</span>
+                    </div>
+                    <button class="validation-toggle" id="validationToggle" title="收起/展开">▼</button>
+                    <button class="validation-clear" id="validationClear" title="清除校验结果">清除</button>
+                </div>
+                <div class="validation-body" id="validationBody">
+                    <div class="validation-empty">点击"校验"按钮检查当前表数据</div>
+                </div>
+            </div>
+
+            <!-- 全局消息提示 -->
+            <div class="toast-container" id="toastContainer"></div>
+        </main>
+    </div>
+
+    </div><!-- /mainApp -->
+
+    <!-- 导入进度弹窗 -->
+    <div class="modal" id="importModal" style="display:none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>导入 Excel</h3>
+                <button class="modal-close" id="importModalClose">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-hint">请选择要导入的 Excel 文件，数据将导入到当前台账：<strong id="importTableName">项目台账</strong></p>
+                <div style="margin-bottom:12px;padding:10px;background:#fff3e0;border-radius:6px;font-size:13px;color:#666;line-height:1.6;">
+                    <strong>导入说明：</strong><br>
+                    1. 第一行为字段中文名（表头），第二行为格式说明（橙色行），数据从第三行开始填写<br>
+                    2. 日期格式：<code>YYYY-MM-DD</code>（如 2024-07-15）<br>
+                    3. 数字字段：可含千分位逗号（如 1,000.50），系统自动转换<br>
+                    4. 下拉选项字段：请填写可选项中的值，否则校验时会提示<br>
+                    5. <strong>导入不校验数据格式</strong>，导入后请点击「校验」按钮检查数据质量
+                </div>
+                <div class="import-dropzone" id="importDropzone">
+                    <p>点击选择文件或将文件拖拽到此处</p>
+                    <p class="import-hint-sub">支持 .xlsx / .xls 格式</p>
+                    <button class="btn btn-primary" id="importSelectBtn">选择文件</button>
+                </div>
+                <div class="import-progress" id="importProgress" style="display:none;">
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <p id="progressText">导入中...</p>
+                </div>
+                <div class="import-result" id="importResult" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" id="importCancelBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认删除弹窗 -->
+    <div class="modal" id="confirmModal" style="display:none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3 id="confirmTitle">确认操作</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" id="confirmCancelBtn">取消</button>
+                <button class="btn btn-danger" id="confirmOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户管理弹窗 -->
+    <div class="modal" id="userManageModal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>用户管理</h3>
+                <button class="modal-close" id="userManageClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-form" id="userForm">
+                    <div class="user-form-group">
+                        <label>用户名</label>
+                        <input type="text" id="formUsername" placeholder="登录用户名">
+                    </div>
+                    <div class="user-form-group">
+                        <label>显示名称</label>
+                        <input type="text" id="formDisplayName" placeholder="显示名称">
+                    </div>
+                    <div class="user-form-group">
+                        <label>密码</label>
+                        <input type="password" id="formPassword" placeholder="密码（修改时留空表示不修改）">
+                    </div>
+                    <div class="user-form-group">
+                        <label>角色</label>
+                        <select id="formRole">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="userFormSubmit">添加用户</button>
+                    <button class="btn btn-cancel" id="userFormCancel" style="display:none;">取消编辑</button>
+                </div>
+                <div class="user-list" id="userList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下拉选项管理弹窗 -->
+    <div class="modal" id="dropdownManageModal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>下拉选项管理</h3>
+                <button class="modal-close" id="dropdownManageClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-form">
+                    <div class="user-form-group">
+                        <label>选择表</label>
+                        <select id="ddTableSelect"></select>
+                    </div>
+                    <div class="user-form-group">
+                        <label>选择字段</label>
+                        <select id="ddFieldSelect"></select>
+                    </div>
+                    <div class="user-form-group">
+                        <label>新增选项值</label>
+                        <input type="text" id="ddOptionValue" placeholder="输入新的选项值">
+                    </div>
+                    <button class="btn btn-primary" id="ddAddBtn">添加选项</button>
+                </div>
+                <div class="user-list" id="ddOptionList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表头列管理弹窗 -->
+    <div class="modal" id="columnManageModal" style="display:none;">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h3>表头列管理</h3>
+                <button class="modal-close" id="columnManageClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-form">
+                    <div class="user-form-group">
+                        <label>选择表</label>
+                        <select id="colTableSelect"></select>
+                    </div>
+                    <div class="user-form-group">
+                        <label>新增列名称</label>
+                        <input type="text" id="colNameInput" placeholder="输入列中文名">
+                    </div>
+                    <div class="user-form-group">
+                        <label>列类型</label>
+                        <select id="colTypeSelect">
+                            <option value="string">文本</option>
+                            <option value="number">数字</option>
+                            <option value="integer">整数</option>
+                            <option value="date">日期</option>
+                        </select>
+                    </div>
+                    <div class="user-form-group">
+                        <label>是否下拉选项</label>
+                        <select id="colDropdownSelect">
+                            <option value="否">否</option>
+                            <option value="是">是</option>
+                        </select>
+                    </div>
+                    <div class="user-form-group">
+                        <label>插入位置（在此列之后）</label>
+                        <select id="colPositionSelect">
+                            <option value="">末尾</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="colAddBtn">添加列</button>
+                </div>
+                <div style="margin-top:12px;font-size:13px;color:#6b7280;">提示：基础列可隐藏/恢复，自定义列可删除，所有列可重命名。点击「重命名」修改表头名称，点击「原名」恢复默认。</div>
+                <div class="user-list" id="colList" style="max-height:400px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改密码弹窗 -->
+    <div class="modal" id="changePwdModal" style="display:none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>修改密码</h3>
+                <button class="modal-close" id="changePwdClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-form">
+                    <div class="user-form-group">
+                        <label>当前用户</label>
+                        <input type="text" id="pwdUsername" disabled>
+                    </div>
+                    <div class="user-form-group" id="pwdOldGroup" style="display:none;">
+                        <label>原密码</label>
+                        <input type="password" id="pwdOld" placeholder="请输入原密码">
+                    </div>
+                    <div class="user-form-group">
+                        <label>新密码</label>
+                        <input type="password" id="pwdNew" placeholder="请输入新密码">
+                    </div>
+                    <div class="user-form-group">
+                        <label>确认密码</label>
+                        <input type="password" id="pwdConfirm" placeholder="请再次输入新密码">
+                    </div>
+                    <div class="pwd-force-hint" id="pwdForceHint" style="display:none;font-size:13px;color:#b45309;background:#fef3c7;padding:8px 10px;border-radius:6px;margin-top:4px;">
+                        首次登录请修改初始密码后才能继续使用。
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" id="changePwdCancel">取消</button>
+                <button class="btn btn-primary" id="changePwdSubmit">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
